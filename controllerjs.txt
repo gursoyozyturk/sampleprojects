@@ -1,0 +1,159 @@
+angular.module("ciciannemApp.controllers",[]).
+controller("MainController", function ($scope, ProductService) {
+    $scope.message = "Main Controller";
+
+    ProductService.GetProductsFromDb().then(function (d) {
+        $scope.listProducts = d.data.list;
+    })
+
+    $scope.DeleteProduct = function (id, index) {
+        $scope.listProducts.splice(index, 1);
+        ProductService.DeleteProduct(id);
+    }
+}).
+controller("AddProductController", function ($scope, ProductService) {
+        $scope.message = "Add Product Details";
+        $scope.AddProduct = function ()
+        {
+            ProductService.AddProduct($scope.product);
+        }
+}).
+controller("EditProductController", function ($scope, ProductService, $routeParams) {
+        $scope.message = "Edit Product Details";
+
+        var id = $routeParams.id;
+        ProductService.GetProductById(id).then(function (d) {
+            $scope.product = d.data.product;
+        })
+
+        $scope.UpdateProduct = function () {
+            ProductService.UpdateProduct($scope.product);
+        }
+    }).
+controller("AddImageController", ["$scope", "$q", "ProductService", function ($scope, $q,  ProductService) {
+       
+    //Variables
+    $scope.Message = "";
+    $scope.FileInvalidMessage;
+    $scope.SelectedFileForUpload = null;
+    $scope.Description = "";
+    $scope.IsFormSubmitted = false;
+    $scope.IsFileValid = false;
+    $scope.IsFormValid = false;
+    var SelectFileForUpload = null;
+
+    //Form Validation
+    $scope.$watch("f1.$valid", function (isValid) {
+        $scope.IsFormValid = isValid;
+    });
+
+    //File Validation
+    $scope.ChechFileValid = function (file) {
+        var isValid = false;
+        if ($scope.SelectedFileForUpload != null) {
+            if ((file.type == 'image/png' || file.type == 'image/jpeg' || file.type == 'image/gif') && file.size <= 512 * 1024) {
+                $scope.FileInvalidMessage = "";
+                isValid = true;
+            }
+            else {
+                $scope.FileInvalidMessage = "Selected file is Invalid.(only file type png, jpeg and gif and 512 kb size allowed )";
+            }
+        }
+        else {
+            $scope.FileInvalidMessage = "Image Required!";
+        }
+        if (isValid) {
+            $scope.IsFileValid = true;
+            $scope.IsFormValid = true;
+        }
+    };
+
+    //File Select 
+    $scope.selectFileforUpload = function (file) {
+        $scope.SelectedFileForUpload = file[0];
+    }
+
+    //Save File
+    $scope.AddImage = function () {
+        $scope.IsFormSubmitted = true;
+        $scope.Message = "";
+        $scope.ChechFileValid($scope.SelectedFileForUpload);
+        if ($scope.IsFormValid && $scope.IsFileValid) {
+            ProductService.AddImage($scope.SelectedFileForUpload, $scope.Description).then(function (d) {
+                alert(d.Message);
+                ClearForm();
+            }, function (e) {
+                alert(e);
+      
+            });
+        }
+        else {
+            $scope.Message = "All Fields are required";
+        }
+    };
+    //Clear Form
+
+    function ClearForm() {
+        $scope.Description = "";
+        alert($scope.Description);
+        angular.forEach(angular.element("input[type='file']"), function (inputElem) {
+            angular.element(inputElem).val(null);
+        });
+        $scope.f1.$setPristine();
+        $scope.IsFormSubmitted = false;
+    }
+}]).
+factory("ProductService", ["$http", "$q", function ($http, $q) {
+    var fac = {};
+    fac.GetProductsFromDb = function ()
+    {
+        return $http.get("/Product/GetProducts");
+    }
+    fac.GetProductById = function (id)
+    {
+        return $http.get("/Product/GetProductById", { params: { id: id } });
+    }
+    fac.AddProduct = function (product)
+    {
+        $http.post("/Product/AddProduct", product).then(function (response) {
+            var response = "Ürün Eklendi"; alert(response);
+        }, function (response) {
+            var response = "Hata Oluştu"; alert(response);
+        });
+    }
+    fac.UpdateProduct = function (product) {
+        $http.post("/Product/UpdateProduct", product).then(function (response) {
+            var response = "Ürün Güncellendi"; alert(response);
+        }, function (response) {
+            var response = "Hata Oluştu"; alert(response);
+        })
+    }
+    fac.DeleteProduct = function (id) {
+        $http.post("/Product/DeleteProduct", { id: id }).then(function (response) {
+            var response = "Ürün Silindi"; alert(response);
+        }, function (response) {
+            var response = "Hata Oluştu"; alert(response);
+        })
+    }
+    fac.AddImage = function (file, description) {
+        
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('description', description);
+        
+        var defer = $q.defer();
+        $http.post("/Product/AddImage", formData, {
+            withCredentials: true,
+            headers: { 'Content-Type': undefined },
+            transformRequest: angular.identity
+        })
+                        .then(function (d) {
+                            defer.resolve(d);
+        }, function () {
+            defer.reject("File Upload Failed!");
+        });
+
+        return defer.promise;
+    }
+    return fac;
+}])

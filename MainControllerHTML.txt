@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title> Main Controller </title>
+	<meta charset="utf-8" />
+    <link href="Content/bootstrap.css" rel="stylesheet" />
+    <script src="Scripts/jquery-1.9.1.js"></script>    
+    <script src="Scripts/angular.js"></script>
+    <script src="Scripts/bootstrap.js"></script>
+    <script src="Scripts/angular-route.min.js"></script>  
+    <script src="Scripts/controllers.js"></script>
+    <script src="Scripts/app.js"></script>
+
+</head>
+<body ng-app="ciciannemApp">
+    <div ng-view>
+    </div>
+</body>
+</html>
